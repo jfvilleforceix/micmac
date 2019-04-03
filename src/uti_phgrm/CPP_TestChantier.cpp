@@ -38,6 +38,7 @@ English :
 Header-MicMac-eLiSe-25/06/2007*/
 #include "StdAfx.h"
 #include <iomanip>
+#include <array>
 
 /*
 void TestOneCorner(ElCamera * aCam,const Pt2dr&  aP, const Pt2dr&  aG)
@@ -421,6 +422,204 @@ int mergeSOMAF_main(int argc,char ** argv)
     return EXIT_SUCCESS;
 }
 
+//---------------------------------------------------------------------//
+
+
+void DesProj_Banniere()
+{
+    std::cout <<  "\n";
+    std::cout <<  " ****************************************\n";
+    std::cout <<  " *     D-épart                          *\n";
+    std::cout <<  " *     E-PSG                            *\n";
+    std::cout <<  " *     S-ortie                          *\n";
+    std::cout <<  " *     P-ROJ                            *\n";
+    std::cout <<  " ****************************************\n\n";
+}
+
+
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
+}
+
+
+int DesProj_main(int argc,char ** argv)
+{
+    std::cout << "\n";
+
+//    MMD_InitArgcArgv(argc,argv);
+
+    std::string anEPSG;
+    std::string aPathOut = "./SysCoDefault.xml";
+
+    ElInitArgMain
+    (
+        argc,argv,
+        LArgMain()  << EAMC(anEPSG, "EPSG of spatial reference system", eSAM_IsPatFile),
+        LArgMain()  << EAM(aPathOut, "Out", true, "Output path (default = './SysCo{EPSG}.xml')")
+    );
+
+    if(aPathOut == "./SysCoDefault.xml")
+    {
+        aPathOut = "./SysCo" + anEPSG + ".xml";
+    }
+
+    cSystemeCoord aSC;
+    cBasicSystemeCoord aBSC;
+    aBSC.TypeCoord() = eTC_Proj4;
+    aBSC.AuxR() = {1,1,1};
+
+    std::string line;
+    std::string epsgPath = exec("locate epsg");
+    epsgPath.pop_back();
+    std::cout << "Path proj/epsg: " << epsgPath.c_str() << std::endl;
+    std::ifstream epsgFile(epsgPath.c_str(), ios::in);
+//    std::ifstream epsgFile("/usr/share/proj/epsg", ios::in);
+
+    if(epsgFile)
+    {
+        bool epsgOK = false;
+        while(std::getline(epsgFile, line))
+        {
+            if (line.find("<" + anEPSG + ">") == 0)
+            {
+                std::size_t start = line.find("+");
+                std::size_t end = line.find("<>");
+                std::string proj4 = line.substr(start, end-start);
+                std::cout << "EPSG: " << anEPSG << std::endl << "proj4: " << proj4 << std::endl;
+                aBSC.AuxStr().push_back(proj4);
+                epsgOK = true;
+                break;
+            }
+        }
+        if(!epsgOK)
+        {
+            std::cout << "Le code EPSG " << anEPSG << " n'existe pas dans proj4." << std::endl;
+        }
+
+        epsgFile.close();
+    }
+    else
+    {
+        std::cerr << "Fichier manquant: proj/epsg" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    aSC.BSC().push_back(aBSC);
+
+    MakeFileXML(aSC, aPathOut);
+
+    DesProj_Banniere();
+
+    return EXIT_SUCCESS;
+}
+
+
+//---------------------------------------------------------------------//
+
+
+void Concorde_Banniere()
+{
+    std::cout <<  "\n";
+    std::cout <<  " ****************************************\n";
+    std::cout <<  " *     C-alage                          *\n";
+    std::cout <<  " *     O-rienté d'une prise de vue      *\n";
+    std::cout <<  " *     N-ayant que                      *\n";;
+    std::cout <<  " *     C-alibration de caméra,          *\n";
+    std::cout <<  " *     O-rientation et géo-             *\n";
+    std::cout <<  " *     R-éférencement                   *\n";
+    std::cout <<  " *     D-un objet mobile                *\n";
+    std::cout <<  " *     E-n relèvement image par image   *\n";
+    std::cout <<  " ****************************************\n\n";
+}
+
+
+int Concorde_main(int argc,char ** argv)
+{
+    std::cout << "\n";
+
+//    MMD_InitArgcArgv(argc,argv);
+
+    std::string aFullDir, aGPSYPR, aPreCalib, aSaisieFile, aLocalGCP;
+    std::string anOriOut = "Concorde";
+
+    ElInitArgMain
+    (
+        argc,argv,
+        LArgMain()  << EAMC(aFullDir, "Full Directory (Dir+Pattern)", eSAM_IsPatFile)
+                    << EAMC(aGPSYPR, "GNSS and yaw-pitch-roll angles (XML)", eSAM_IsExistFileRP)
+                    << EAMC(aPreCalib, "Pre-calibration folder", eSAM_IsExistDirOri)
+                    << EAMC(aSaisieFile, "Saisie Appuis image file (XML)", eSAM_IsExistFileRP)
+                    << EAMC(aLocalGCP, "GCP in local frame (XML)", eSAM_IsExistFile),
+        LArgMain()  << EAM(anOriOut,"Out",true,"Out orientation, def=Concorde")
+    );
+
+    std::string aDir, aPat;
+    SplitDirAndFile(aDir,aPat,aFullDir);
+    cInterfChantierNameManipulateur * anICNM = cInterfChantierNameManipulateur::BasicAlloc(aDir);
+    const std::vector<std::string> aSetIm = *(anICNM->Get(aPat));
+
+    cDicoAppuisFlottant aDAFOri = StdGetFromPCP(aGPSYPR, DicoAppuisFlottant);
+    cDicoAppuisFlottant aDAFLoc = StdGetFromPCP(aLocalGCP, DicoAppuisFlottant);
+    cDicoAppuisFlottant aDAFOut;
+    std::string aDAFOutPath;
+    cOneAppuisDAF aPtOri, aPtLoc, aPtOut;
+
+    for (std::list<cOneAppuisDAF>::const_iterator itPOri = aDAFOri.OneAppuisDAF().begin() ; itPOri != aDAFOri.OneAppuisDAF().end() ; itPOri++)
+    {
+        aPtOri = *itPOri;
+
+        for(unsigned aC=0; aC<aSetIm.size(); aC++)
+        {
+//            CamStenope * aCam = CamOrientGenFromFile(anOriFolder + "/Orientation-" + aSetIm[aC] + ".xml", anICNM);
+            std::cout << "Image = " << aSetIm[aC] << "\n";
+//            ElMatrix<double> aMatRot = aCam->Orient().Mat();
+
+            if(aPtOri.NamePt() == aSetIm[aC])
+            {
+                for (std::list<cOneAppuisDAF>::const_iterator itPLoc = aDAFLoc.OneAppuisDAF().begin() ; itPLoc != aDAFLoc.OneAppuisDAF().end() ; itPLoc++)
+                {
+                    aPtLoc = *itPLoc;
+
+                    ElRotation3D aRotZYX(aPtOri.Pt(), aPtOri.Incertitude().x, aPtOri.Incertitude().y, aPtOri.Incertitude().z);
+                    aPtOut.Pt() = aRotZYX.ImAff(aPtLoc.Pt());
+                    aPtOut.NamePt() = aPtLoc.NamePt();
+                    aPtOut.Incertitude() = Pt3dr(1,1,1);
+
+                    aDAFOut.OneAppuisDAF().push_back(aPtOut);
+                }
+
+                aDAFOutPath = "GCP_" + aSetIm[aC] + ".xml";
+
+                std::cout << "DAFOut = " << aDAFOutPath << "\n";
+
+                MakeFileXML(aDAFOut, aDAFOutPath);
+
+                // Aspro treatments
+                std::string aComAspro = MM3dBinFile_quotes("Aspro")
+                                        + " " + aSetIm[aC]
+                                        + " " + aPreCalib
+                                        + " " + aDAFOutPath
+                                        + " " + aSaisieFile
+                                        + " Out=" + anOriOut + "-" + aSetIm[aC];
+
+                System(aComAspro);
+            }
+        }
+    }
+
+    Concorde_Banniere();
+
+    return EXIT_SUCCESS;
+}
 
 
 //---------------------------------------------------------------------//

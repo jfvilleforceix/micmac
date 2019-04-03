@@ -478,7 +478,7 @@ See https://en.wikipedia.org/wiki/Image_sensor_format#Table_of_sensor_formats_an
 	</CameraEntry>
 	<CameraEntry>
 		<Name> GoPro HERO3 White Edition</Name>
-		<SzCaptMm> 3.42 4.54 </SzCaptMm>
+		<SzCaptMm> 4.29 5.76 </SzCaptMm>
 		<ShortName> GoPro HD Hero 3</ShortName>
 	</CameraEntry>
 	<CameraEntry>
