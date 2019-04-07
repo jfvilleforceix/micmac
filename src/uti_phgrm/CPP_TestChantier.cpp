@@ -478,8 +478,8 @@ int DesProj_main(int argc,char ** argv)
     aBSC.AuxR() = {1,1,1};
 
     std::string line;
-    std::string epsgPath = exec("locate epsg");
-    epsgPath.pop_back();
+    std::string epsgPath = exec("locate proj/epsg");
+    epsgPath = epsgPath.substr(0, epsgPath.find("\n"));
     std::cout << "Path proj/epsg: " << epsgPath.c_str() << std::endl;
     std::ifstream epsgFile(epsgPath.c_str(), ios::in);
 //    std::ifstream epsgFile("/usr/share/proj/epsg", ios::in);
@@ -589,7 +589,7 @@ int Concorde_main(int argc,char ** argv)
                 {
                     aPtLoc = *itPLoc;
 
-                    ElRotation3D aRotZYX(aPtOri.Pt(), aPtOri.Incertitude().x, aPtOri.Incertitude().y, aPtOri.Incertitude().z);
+                    ElRotation3D aRotZYX(aPtOri.Pt(), aPtOri.Incertitude().z, aPtOri.Incertitude().y, aPtOri.Incertitude().x);
                     aPtOut.Pt() = aRotZYX.ImAff(aPtLoc.Pt());
                     aPtOut.NamePt() = aPtLoc.NamePt();
                     aPtOut.Incertitude() = Pt3dr(1,1,1);
