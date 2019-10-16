@@ -871,12 +871,9 @@ extern int MoyMAF_main(int argc, char ** argv);
 extern int GenerateTP_main(int argc, char ** argv);
 extern int SimuRolShut_main(int argc, char ** argv);
 extern int GenerateOrient_main(int argc, char ** argv);
-<<<<<<< HEAD
-=======
 extern int ReechRolShut_main(int argc, char ** argv);
 extern int ReechRolShutV1_main(int argc, char ** argv);
 extern int ExportTPM_main(int argc, char ** argv);
->>>>>>> 0797025a7ca9b346c8cd52fff24e41df624fd89d
 extern int CompMAF_main(int argc, char ** argv);
 extern int GenerateOriGPS_main(int argc, char ** argv);
 extern int GenerateMAF_main(int argc, char ** argv);
