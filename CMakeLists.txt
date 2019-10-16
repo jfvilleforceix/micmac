@@ -128,7 +128,7 @@ option(TRACE_SYSTEM "print system calls" OFF)
 option(BUILD_BENCH "compile low-level test bench" OFF)
 
 # Interfaces de saisie des param�tres
-option(WITH_QT5 "compile Qt interfaces" OFF)
+option(WITH_QT5 "compile Qt interfaces" ON)
 
 # Compilateur C++11
 option(WITH_CPP11 "Compilateur C++11" ON)
