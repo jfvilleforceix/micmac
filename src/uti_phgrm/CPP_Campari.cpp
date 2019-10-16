@@ -134,15 +134,16 @@ cAppli_Tapas_Campari::cAppli_Tapas_Campari() :
    mRatioMaxDistCS  (30.0),
    mNamesBlockInit  (false),
    mDSElimB         (1),
+   mExportMatrixMarket        (false),
    mArg             (new LArgMain)
 {
     (*mArg) << EAM(mVBlockGlob,"BlocGlob",true,"Param for Glob bloc compute [File,SigmaCenter,SigmaRot,?MulFinal,?Export]")
             << EAM(mVBlockDistGlob,"DistBlocGlob",true,"Param for Dist Glob bloc compute [File,SigmaDist,?MulFinal,?Export]")
             << EAM(mVBlockRel,"BlocTimeRel",true,"Param for Time Reliative bloc compute [File,SigmaCenter,SigmaRot,?MulFinal,?Export]")
             << EAM(mVOptGlob,"OptBlocG",true,"[SigmaTr,SigmaRot]")
-            << EAM(GlobLibFoc,"FocFree",true,"Foc Free (Def=false)", eSAM_IsBool)
-            << EAM(GlobLibPP,"PPFree",true,"Principal Point Free (Def=false)", eSAM_IsBool)
-            << EAM(GlobLibAff,"AffineFree",true,"Affine Parameter (Def=false)", eSAM_IsBool)
+            << EAM(GlobLibFoc,"FocFree",true,"Foc Free (Def=true)", eSAM_IsBool)
+            << EAM(GlobLibPP,"PPFree",true,"Principal Point Free (Def=true)", eSAM_IsBool)
+            << EAM(GlobLibAff,"AffineFree",true,"Affine Parameter (Def=true)", eSAM_IsBool)
             << EAM(GlobDegAdd,"DegAdd",true, "When specified, degree of additionnal parameter")
             << EAM(GlobDegGen,"DegFree",true, "When specified degree of freedom of parameters generiqs")
             << EAM(GlobDRadMaxUSer,"DRMax",true, "When specified degree of freedom of radial parameters")
@@ -152,6 +153,7 @@ cAppli_Tapas_Campari::cAppli_Tapas_Campari() :
             << EAM(GlobLibDec,"LibDec",true,"Free decentric parameter, Def context dependant", eSAM_IsBool)
             << EAM(mRapOnZ,"RapOnZ",true,"Force Rappel on Z [Z,Sigma,KeyGrp]")
             << EAM(mDSElimB,"SElimB",true,"Print stat on reason for bundle elimination (0,1,2)")
+            << EAM(mExportMatrixMarket,"ExpMatMark",true,"Export Cov Matrix to Matrix Market Format+Eigen/cmp")
             << EAM(mSauvAutom,"SauvAutom",true, "Save intermediary results to, Set NONE if dont want any", eSAM_IsOutputFile)
             << EAM(mRatioMaxDistCS,"RatioMaxDistCS",true, "Ratio max of distance P-Center ", eSAM_IsOutputFile)
                ;
@@ -169,6 +171,10 @@ void cAppli_Tapas_Campari::AddParamBloc(std::string & mCom)
     // if (EAMIsInit(&mDSElimB))
     {
        mCom = mCom + " +DSElimB=" + ToString(mDSElimB) + " ";
+    }
+    if (ExportMatrixMarket())
+    {
+       mCom = mCom + " +ExportMatrixMarket=true ";
     }
 
     if (mSauvAutom!="")

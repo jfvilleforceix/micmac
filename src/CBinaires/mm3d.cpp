@@ -272,7 +272,10 @@ int CPP_FitsMatch1Im(int argc, char ** argv);
 int HackToF(int argc,char ** argv);
 int CPP_GenPrime(int argc,char ** argv);
 int CPP_GIMMI_main(int argc,char ** argv);
-
+int HomolFromProfEtPx_main(int argc,char ** argv);
+int Line2Line_main(int argc,char ** argv);
+int CoronaRessample_main(int argc,char ** argv);
+int DivFilters_main(int argc,char ** argv);
 
 const std::vector<cMMCom> & getAvailableCommands()
 {
@@ -296,7 +299,7 @@ const std::vector<cMMCom> & getAvailableCommands()
 		aRes.push_back(cMMCom("TestBundleInter", TestBundleInter_main, "Block Initialisation "));
 		aRes.push_back(cMMCom("Blinis", Blinis_main, "Block Initialisation ", cArgLogCom(2)));
 		aRes.push_back(cMMCom("ContrastFilter", Contrast_main, "Some contrast filtering "));
-		aRes.push_back(cMMCom("Nikrup", Nikrup_main,/*(*/ "Generik image filter, using invert polish like notation ;-) "));
+        aRes.push_back(cMMCom("Nikrup", Nikrup_main,/*(*/ "Generik image filter, using invert polish like notation ;-) ",cArgLogCom(3)));
 		aRes.push_back(cMMCom("Turn90Im", TournIm_main, "Turn image of 90 degre"));
 		aRes.push_back(cMMCom("RedTieP", RedTieP_main, "Test tie points filtering "));
 		aRes.push_back(cMMCom("OriRedTieP", OriRedTie_main, "Tie points filtering, using Martini results "));
@@ -540,6 +543,10 @@ const std::vector<cMMCom> & getAvailableCommands()
 #endif
 		aRes.push_back(cMMCom("TestLib", SampleLibElise_main, " To call the program illustrating the library"));
 		aRes.push_back(cMMCom("FieldDep3d", ChamVec3D_main, " To export results of matching as 3D shifting"));
+		aRes.push_back(cMMCom("HomProfPx", HomolFromProfEtPx_main, " Export pixel correspondences from Px1 et Px2"));
+		aRes.push_back(cMMCom("L2L", Line2Line_main, " Project row/column in one image to another"));
+		aRes.push_back(cMMCom("CoronaCorrect", CoronaRessample_main, " Correct some geometric defautl of corona images"));
+		aRes.push_back(cMMCom("DivFilter", DivFilters_main, " Test divers filters"));
 		aRes.push_back(cMMCom("SupMntIm", SupMntIm_main, " Tool for superposition of Mnt Im & level curve"));
 
 		aRes.push_back(cMMCom("MMXmlXif", MakeMultipleXmlXifInfo_main, " Generate Xml from Xif (internal use mainly)"));
@@ -650,11 +657,16 @@ extern int TestCmpIm_Ewelina(int argc, char ** argv);
 extern int TestER_hom_main(int argc, char ** argv);
 extern int PFM2Tiff_main(int argc, char ** argv);
 extern int BAL2OriMicMac_main(int argc, char ** argv);
+extern int CPP_NewOriReadFromSfmInit(int argc, char ** argv);
+extern int CPP_Bundler2MM_main(int argc, char ** argv);
+extern int CPP_Strecha2MM(int argc, char ** argv);
 extern int ImPts2Dir_main(int argc, char ** argv);
 extern int FictiveObstest_main(int argc, char ** argv);
 extern int TestPush(int argc, char ** argv);
 //extern int Cillia_main(int argc,char ** argv);
 extern int Homol2GCP_main(int argc, char ** argv);
+extern int CPP_SiftExport_main(int argc, char ** argv);
+extern int Test_Homogr_main(int argc, char ** argv);
 extern int GlobToLocal_main(int argc, char ** argv);
 extern int ExtractZ_main(int argc, char ** argv);
 extern int XYZ_Global_main(int argc, char ** argv);
@@ -757,6 +769,9 @@ int CPP_AllOptimTriplet_main(int argc, char ** argv);
 int CPP_NewSolGolInit_main(int argc, char ** argv);
 int CPP_NewOriImage2G2O_main(int argc, char ** argv);
 int CPP_FictiveObsFin_main(int argc, char ** argv);
+int CPP_XmlOriRel2OriAbs_main(int argc, char ** argv);
+int CPP_Rel2AbsTest_main(int argc, char ** argv);
+int CPP_Rot2MatEss_main(int argc, char ** argv);
 int GenOriFromOnePose_main(int argc, char ** argv);
 int CPP_NewGenTriOfCple(int argc, char ** argv);
 int CPP_TestBundleGen(int argc, char ** argv);
@@ -856,6 +871,12 @@ extern int MoyMAF_main(int argc, char ** argv);
 extern int GenerateTP_main(int argc, char ** argv);
 extern int SimuRolShut_main(int argc, char ** argv);
 extern int GenerateOrient_main(int argc, char ** argv);
+<<<<<<< HEAD
+=======
+extern int ReechRolShut_main(int argc, char ** argv);
+extern int ReechRolShutV1_main(int argc, char ** argv);
+extern int ExportTPM_main(int argc, char ** argv);
+>>>>>>> 0797025a7ca9b346c8cd52fff24e41df624fd89d
 extern int CompMAF_main(int argc, char ** argv);
 extern int GenerateOriGPS_main(int argc, char ** argv);
 extern int GenerateMAF_main(int argc, char ** argv);
@@ -940,11 +961,16 @@ const std::vector<cMMCom> & TestLibAvailableCommands()
 		aRes.push_back(cMMCom("TestER2", TestER_hom_main, "ER test hom"));
 		aRes.push_back(cMMCom("Tif2Pfm", PFM2Tiff_main, "Tif to pfm or the other way around"));
 		aRes.push_back(cMMCom("BAL2MM", BAL2OriMicMac_main, "Convert a BAL problem to MicMac"));
+		aRes.push_back(cMMCom("SfmI2MM", CPP_NewOriReadFromSfmInit, "Convert the SfmInit problem to MicMac"));
+		aRes.push_back(cMMCom("Bundler2MM", CPP_Bundler2MM_main, "Convert the Bundler solution to MicMac"));
+		aRes.push_back(cMMCom("Str2MM", CPP_Strecha2MM, "Convert the Strecha solution to MicMac"));
 		aRes.push_back(cMMCom("Im2Dir", ImPts2Dir_main, "Extract directions from images"));
 		aRes.push_back(cMMCom("FictObs", FictiveObstest_main, "someee stuff"));
 		aRes.push_back(cMMCom("CamTOFExp", TestCamTOF_main, "Export TOF camera pcd file to MicMac formats (e.g. tif, xml, ply)"));
 		aRes.push_back(cMMCom("TestMH", TestMH_main, "Test Mike"));
 		aRes.push_back(cMMCom("TestAT", TestPush, "AT test workplace"));
+		aRes.push_back(cMMCom("ExportSIFT", CPP_SiftExport_main, "Export SIFT descriptor"));
+		aRes.push_back(cMMCom("TestH", Test_Homogr_main, "TestHomogr"));
 
 		//       aRes.push_back(cMMCom("TestCillia",Cillia_main,"cillia"));
 		aRes.push_back(cMMCom("Homol2GCP", Homol2GCP_main, "cillia"));
@@ -1096,6 +1122,9 @@ const std::vector<cMMCom> & TestLibAvailableCommands()
 
         aRes.push_back(cMMCom("NO_GenTriOfCple",CPP_NewGenTriOfCple,"New Orientation : select triple of one edge"));
 		aRes.push_back(cMMCom("NO_FicObs", CPP_FictiveObsFin_main, "New orientation : ficticious observations"));
+		aRes.push_back(cMMCom("NO_XmlRel2Coniq", CPP_XmlOriRel2OriAbs_main, "New orientation : convert xml relative to conique"));
+		aRes.push_back(cMMCom("NO_R2A",CPP_Rel2AbsTest_main, "New orientation : calculate the absolute orientation of a query image"));
+		aRes.push_back(cMMCom("NO_Ori2MatEss", CPP_Rot2MatEss_main, "New orientation : convert Ori to essential matrix"));
 
         aRes.push_back(cMMCom("OriMatis2MM",MatisOri2MM_main,"Convert from Matis to MicMac"));
 
@@ -1160,12 +1189,15 @@ const std::vector<cMMCom> & TestLibAvailableCommands()
         aRes.push_back(cMMCom("ImgTMTxt2Xml_B",main_Txt2CplImageTime ,"Convert txt file containing camlight image name and GPS week and time into micmac format"));
 
         aRes.push_back(cMMCom("MoyMAF",MoyMAF_main ,"Calculate center of 4 corner points"));
-        aRes.push_back(cMMCom("GenerateTP",GenerateTP_main ,"Generate simulated tie points"));
-        aRes.push_back(cMMCom("SimuRolShut",SimuRolShut_main ,"Generate simulated tie points"));
-        aRes.push_back(cMMCom("GenerateOrient",GenerateOrient_main,"Generate modification of orientation"));
+        aRes.push_back(cMMCom("GenerateTP",GenerateTP_main ,"Generate simulated tie points",cArgLogCom(2)));
+        aRes.push_back(cMMCom("SimuRolShut",SimuRolShut_main ,"Generate simulated tie points",cArgLogCom(2)));
+        aRes.push_back(cMMCom("GenerateOrient",GenerateOrient_main,"Generate modification of orientation",cArgLogCom(2)));
+        aRes.push_back(cMMCom("ReechRolShut",ReechRolShut_main ,"Resampling for rolling shutter effect correction, V2, reproj on new cam orientation",cArgLogCom(2)));
+        aRes.push_back(cMMCom("ReechRolShutV1",ReechRolShutV1_main ,"Resampling for rolling shutter effect correction, V1, linear compression/dilatation"));
+        aRes.push_back(cMMCom("ExportTPM",ExportTPM_main ,"Export tie point multiplicity"));
         aRes.push_back(cMMCom("CompMAF",CompMAF_main ,"Compare MAF files"));
         aRes.push_back(cMMCom("GenerateOriGPS",GenerateOriGPS_main ,"Compare MAF files"));
-        aRes.push_back(cMMCom("GenerateMAF",GenerateMAF_main ,"Generate simulated MAF"));
+        aRes.push_back(cMMCom("GenerateMAF",GenerateMAF_main ,"Generate simulated MAF",cArgLogCom(2)));
         aRes.push_back(cMMCom("GenImgTM",GenImgTM_main ,"Generate fake Img name/time couple from GPS .xml file"));
         aRes.push_back(cMMCom("EsSim",EsSim_main ,"EsSim"));
         aRes.push_back(cMMCom("ProcessThmImgs",ProcessThmImgs_main,"Tool to process Thermique acquisition of IGN"));
@@ -1470,6 +1502,11 @@ bool J4M()  //  indicate if we are in Jean Michael Muler Mic Mac ....
 
 int main(int argc, char ** argv)
 {
+if (0)
+{
+   for (int ak=0 ; ak<argc ; ak++)
+    std::cout << "MMM [" << argv[ak] << "]\n";
+}
 	//  Genere un warning si la ligne de commande contient des caratere non ASCII, car ceux ci
 	// peuvent être invisible et genere des erreurs peu comprehensibles
 

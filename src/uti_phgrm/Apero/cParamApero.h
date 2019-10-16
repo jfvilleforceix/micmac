@@ -3195,6 +3195,9 @@ class cSectionChantier
 
         cTplValGesInit< double > & ThresholdWarnPointsBehind();
         const cTplValGesInit< double > & ThresholdWarnPointsBehind()const ;
+
+        cTplValGesInit< bool > & ExportMatrixMarket();
+        const cTplValGesInit< bool > & ExportMatrixMarket()const ;
     private:
         cTplValGesInit< double > mRatioMaxDistCS;
         cTplValGesInit< std::string > mDebugVecElimTieP;
@@ -3222,6 +3225,7 @@ class cSectionChantier
         cTplValGesInit< std::string > mSauvAutom;
         cTplValGesInit< bool > mSauvAutomBasic;
         cTplValGesInit< double > mThresholdWarnPointsBehind;
+        cTplValGesInit< bool > mExportMatrixMarket;
 };
 cElXMLTree * ToXMLTree(const cSectionChantier &);
 
@@ -5960,12 +5964,16 @@ class cExportPtsFlottant
         cTplValGesInit< std::string > & NameFileTxt();
         const cTplValGesInit< std::string > & NameFileTxt()const ;
 
+        cTplValGesInit< std::string > & NameFileJSON();
+        const cTplValGesInit< std::string > & NameFileJSON()const ;
+
         cTplValGesInit< std::string > & TextComplTxt();
         const cTplValGesInit< std::string > & TextComplTxt()const ;
     private:
         cTplValGesInit< std::string > mPatternSel;
         cTplValGesInit< std::string > mNameFileXml;
         cTplValGesInit< std::string > mNameFileTxt;
+        cTplValGesInit< std::string > mNameFileJSON;
         cTplValGesInit< std::string > mTextComplTxt;
 };
 cElXMLTree * ToXMLTree(const cExportPtsFlottant &);
@@ -7211,6 +7219,9 @@ class cParamApero
 
         cTplValGesInit< double > & ThresholdWarnPointsBehind();
         const cTplValGesInit< double > & ThresholdWarnPointsBehind()const ;
+
+        cTplValGesInit< bool > & ExportMatrixMarket();
+        const cTplValGesInit< bool > & ExportMatrixMarket()const ;
 
         cSectionChantier & SectionChantier();
         const cSectionChantier & SectionChantier()const ;

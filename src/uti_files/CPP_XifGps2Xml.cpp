@@ -37,136 +37,7 @@ English :
 
 Header-MicMac-eLiSe-25/06/2007*/
 
-#define _Pi 3.14159265359
-#include "StdAfx.h"
-// #include "XML_GEN/all_tpl.h"
-
-#include "../TpMMPD/ConvertRtk.h"
-
-class cAppli_XifGps2Xml ;
-class cAppli_XifDate;
-class cAppli_VByDate; // Calculate Im Velocity with Exif Date data
-class cIm_XifGp;
-class cIm_XifDate;
-
-
-
-class cIm_XifDate
-{
-    public:
-        cIm_XifDate(const std::string & aName,cAppli_XifDate &);
-
-        cAppli_XifDate * mAppli;
-        std::string      mName;
-        cMetaDataPhoto   mMDP;
-        cElDate          mDate;
-        int              mDiffSecond; // time lap w.r.t the first image in (s)
-//        hmsTime          mhmsTime;
-//        double           mMJD;
-};
-
-
-class cAppli_XifDate : public cAppliListIm
-{
-    public:
-        cAppli_XifDate(const std::string & aFullName);
-        void Export(const std::string & aOut);
-
-
-        std::vector<cIm_XifDate> mVIm;
-};
-
-
-class cIm_XifGp
-{
-     public :
-         cIm_XifGp(const std::string & aName,cAppli_XifGps2Xml &);
-
-         cAppli_XifGps2Xml * mAppli;
-         std::string         mName;
-         cMetaDataPhoto      mMDP;
-         bool                mHasPT;
-         Pt3dr               mPGeoC;
-};
-
-
-class cAppli_XifGps2Xml : public cAppliListIm
-{
-    public :
-       cAppli_XifGps2Xml(const std::string & aFullName,double aDefZ);
-       void ExportSys(cSysCoord *,const std::string & anOri);
-       void ExportCoordTxtFile(std::string aOut, std::string aOutFormat);
-
-    public :
-      std::vector<cIm_XifGp>  mVIm;
-      double                  mDefZ;
-      double                  mNbOk;
-      Pt3dr                   mGeoCOriRTL;
-      Pt3dr                   mWGS84DegreeRTL;
-      cSystemeCoord           mSysRTL;
-      cOrientationConique     mOC0;
-};
-
-
-
-
-class cAppli_VByDate : public cAppli_XifDate
-{
-    public:
-        cAppli_VByDate(const std::string & aFullName, const std::string & aOri);
-        void CalcV(const std::string & aOut);
-
-        std::vector<CamStenope*>          mVCam;
-};
-
-cAppli_VByDate::cAppli_VByDate(const std::string & aFullName, const std::string & aOri):
-    cAppli_XifDate(aFullName)
-{
-    for(auto & aIm : mVIm)
-    {
-        mVCam.push_back(mICNM->StdCamStenOfNames(aIm.mName,aOri));
-    }
-}
-
-void cAppli_VByDate::CalcV(const std::string & aOut)
-{
-    ELISE_ASSERT(mVCam.size()>1,"Cam Nb not enough for calculating velocity, at least 2")
-    ofstream aFile;
-    aFile.open(mDir+aOut);
-    for(uint aK=0; aK<mVCam.size();aK++)
-    {
-        int aHead, aTail;
-        if(aK==mVCam.size()-1)
-        {
-            aHead = aK-1;
-            aTail=aK;
-        }
-        else if(aK==0)
-        {
-            aHead = aK;
-            aTail = aK+1;
-        }
-        else
-        {
-            aHead = aK-1;
-            aTail = aK+1;
-        }
-        CamStenope * aCam0 = mVCam.at(aHead);
-        CamStenope * aCam1 = mVCam.at(aTail);
-        int aDifSecond = mVIm.at(aTail).mDiffSecond - mVIm.at(aHead).mDiffSecond;
-        double aDifPos = sqrt(
-                              ElSquare(aCam0->PseudoOpticalCenter().x-aCam1->PseudoOpticalCenter().x)
-                             +ElSquare(aCam0->PseudoOpticalCenter().y-aCam1->PseudoOpticalCenter().y)
-                    );
-        //int aDifSecond = aK==0 ? mVIm.at(aK+1).mDiffSecond - mVIm.at(aK).mDiffSecond : mVIm.at(aK+1).mDiffSecond - mVIm.at(aK-1).mDiffSecond;
-        aFile << mVIm.at(aK).mName << " " << aDifPos << " " << aDifSecond << " " << double(aDifPos/aDifSecond) << " " << mVCam.at(aK)->GetRoughProfondeur() << endl;
-    }
-    aFile.close();
-}
-
-
-
-
+#include "CPP_XifGps2Xml.h"
 
 
 /*******************************************************************/
@@ -189,10 +60,34 @@ cAppliListIm::cAppliListIm(const std::string & aFullName) :
 
 /*******************************************************************/
 /*                                                                 */
-/*               cAppli_XifGps2Xml                                 */
+/*                  cIm_XifGp                                      */
 /*                                                                 */
 /*******************************************************************/
 
+cIm_XifGp::cIm_XifGp(const std::string & aName,cAppli_XifGps2Xml & anAppli) :
+    mAppli (&anAppli),
+    mName (aName),
+    mMDP  (cMetaDataPhoto::CreateExiv2(mAppli->mDir+aName)),
+    mHasPT (false)
+{
+   if (mMDP.HasGPSLatLon())
+   {
+       Pt3dr aPWGS84;
+       aPWGS84.x = mMDP.GPSLon();
+       aPWGS84.y = mMDP.GPSLat();
+       aPWGS84.z = mMDP.HasGPSAlt() ? mMDP.GPSAlt() : 0.0;
+       mHasPT = true;
+       mPGeoC  = cSysCoord::WGS84()->ToGeoC(aPWGS84);
+
+       std::cout << aName << " : WGS84(rad) " << aPWGS84 << " GeoC  " << mPGeoC << "\n";
+   }
+}
+
+/*******************************************************************/
+/*                                                                 */
+/*               cAppli_XifGps2Xml                                 */
+/*                                                                 */
+/*******************************************************************/
 
 
 cAppli_XifGps2Xml::cAppli_XifGps2Xml(const std::string & aFullName,double aDefZ) :
@@ -275,24 +170,53 @@ void cAppli_XifGps2Xml::ExportCoordTxtFile(std::string aOut, std::string aOutFor
 	}
 }
 
+
+
+
+
+/*******************************************************************/
+/*                                                                 */
+/*                  cIm_XifDate                                    */
+/*                                                                 */
+/*******************************************************************/
+cIm_XifDate::cIm_XifDate(const std::string & aName):
+    mName(aName),
+    mMDP(cMetaDataPhoto::CreateExiv2(aName)),
+    mDate(mMDP.Date(true)),
+    mDiffSecond(0)
+{}
+
+cIm_XifDate::cIm_XifDate(const std::string & aName, cElHour & aBeginTime):
+    mName(aName),
+    mMDP(cMetaDataPhoto::CreateExiv2(aName)),
+    mDate(mMDP.Date(true))
+{
+    // consider all pics are acquired on the same day
+    mDiffSecond = (mDate.H().H()-aBeginTime.H())*3600
+            + (mDate.H().M()-aBeginTime.M())*60
+            + (mDate.H().S()-aBeginTime.S());
+}
+
+
 /*******************************************************************/
 /*                                                                 */
 /*               cAppli_XifDate                                    */
 /*                                                                 */
 /*******************************************************************/
 cAppli_XifDate::cAppli_XifDate(const std::string & aFullName):
-    cAppliListIm (aFullName)
+    cAppliListIm (aFullName),
+    mBegin(cIm_XifDate(mSetIm->at(0)).mDate.H())
 {
     for (int aKI=0;aKI<int(mSetIm->size()); aKI++)
     {
-        mVIm.push_back(cIm_XifDate((*mSetIm)[aKI],*this));
+        mVIm.push_back(cIm_XifDate((*mSetIm)[aKI],mBegin));
     }
 }
 
 void cAppli_XifDate::Export(const std::string & aOut)
 {
     ofstream aFile;
-    aFile.open (this->mDir+aOut);
+    aFile.open (mDir+aOut);
     for(auto & aIm : mVIm)
     {
         aFile << aIm.mName << " " << aIm.mDate << endl;
@@ -300,55 +224,80 @@ void cAppli_XifDate::Export(const std::string & aOut)
     aFile.close();
 }
 
-/*******************************************************************/
-/*                                                                 */
-/*                  cIm_XifGp                                      */
-/*                                                                 */
-/*******************************************************************/
-
-cIm_XifGp::cIm_XifGp(const std::string & aName,cAppli_XifGps2Xml & anAppli) :
-    mAppli (&anAppli),
-    mName (aName),
-    mMDP  (cMetaDataPhoto::CreateExiv2(mAppli->mDir+aName)),
-    mHasPT (false)
+std::vector<double> cAppli_XifDate::GetVDiffSecond()
 {
-   if (mMDP.HasGPSLatLon())
-   {
-       Pt3dr aPWGS84;
-       aPWGS84.x = mMDP.GPSLon();
-       aPWGS84.y = mMDP.GPSLat();
-       aPWGS84.z = mMDP.HasGPSAlt() ? mMDP.GPSAlt() : 0.0;
-       mHasPT = true;
-       mPGeoC  = cSysCoord::WGS84()->ToGeoC(aPWGS84);
-
-       std::cout << aName << " : WGS84(rad) " << aPWGS84 << " GeoC  " << mPGeoC << "\n";
-   }
-}
-
-/*******************************************************************/
-/*                                                                 */
-/*                  cIm_XifDate                                    */
-/*                                                                 */
-/*******************************************************************/
-cIm_XifDate::cIm_XifDate(const std::string & aName, cAppli_XifDate & anAppli):
-    mAppli(&anAppli),
-    mName(aName),
-    mMDP(cMetaDataPhoto::CreateExiv2(mAppli->mDir+aName)),
-    mDate(mMDP.Date(true))
-{
-    std::cerr << "Read Exif Date data of : " << aName << endl;
-    if(mAppli->mVIm.empty())
-        mDiffSecond = 0;
-    else
+    std::vector<double> aVDiffSecond;
+    for(auto & aIm:mVIm)
     {
-        cElHour aBegin = mAppli->mVIm.at(0).mDate.H();
-        // consider all pics are acquired in the same day
-        mDiffSecond = (mDate.H().H()-aBegin.H())*3600
-                    + (mDate.H().M()-aBegin.M())*60
-                    + (mDate.H().S()-aBegin.S());
+        aVDiffSecond.push_back(aIm.mDiffSecond);
     }
-    std::cout << mName << " " << mDiffSecond << endl;
-    //ShowHmsTime(mhmsTime);
+    return aVDiffSecond;
+}
+
+/*******************************************************************/
+/*                                                                 */
+/*               cAppli_VByDate                                    */
+/*                                                                 */
+/*******************************************************************/
+
+cAppli_VByDate::cAppli_VByDate(const std::string & aFullName, std::string & aOri):
+    cAppli_XifDate(aFullName)
+{
+    StdCorrecNameOrient(aOri,mDir);
+    for(auto & aIm : mVIm)
+    {
+        mVCam.push_back(mICNM->StdCamStenOfNames(aIm.mName,aOri));
+    }
+}
+
+void cAppli_VByDate::CalcV(const std::string & aOut, const bool aHeader)
+{
+    ELISE_ASSERT(mVCam.size()>1,"Cam Nb not enough for calculating velocity, at least 2")
+    ofstream aFile;
+    aFile.open(mDir+aOut);
+    if(aHeader)
+        aFile << "#F=Im_xy_t_Vxy_h_X_Y_Z_Vx_Vy_Vz" << endl;
+    for(uint aK=0; aK<mVCam.size();aK++)
+    {
+        int aHead, aTail;
+        if(aK==mVCam.size()-1)
+        {
+            aHead = aK-1;
+            aTail=aK;
+        }
+        else if(aK==0)
+        {
+            aHead = aK;
+            aTail = aK+1;
+        }
+        else
+        {
+            aHead = aK-1;
+            aTail = aK+1;
+        }
+        CamStenope * aCam0 = mVCam.at(aHead);
+        CamStenope * aCam1 = mVCam.at(aTail);
+        int aDifSecond = mVIm.at(aTail).mDiffSecond - mVIm.at(aHead).mDiffSecond;
+        double aDif = sqrt(
+                              ElSquare(aCam0->PseudoOpticalCenter().x-aCam1->PseudoOpticalCenter().x)
+                             +ElSquare(aCam0->PseudoOpticalCenter().y-aCam1->PseudoOpticalCenter().y)
+                    );
+        Pt3dr aDifPos = aCam1->PseudoOpticalCenter() - aCam0->PseudoOpticalCenter();
+
+        aFile << mVIm.at(aK).mName << " "
+              << aDif << " "
+              << aDifSecond << " "
+              << double(aDif/aDifSecond) << " "
+              << mVCam.at(aK)->GetRoughProfondeur() << " "
+              << aDifPos.x << " "
+              << aDifPos.y << " "
+              << aDifPos.z << " "
+              << aDifPos.x/aDifSecond << " "
+              << aDifPos.y/aDifSecond << " "
+              << aDifPos.z/aDifSecond << " "
+              << endl;
+    }
+    aFile.close();
 }
 
 
@@ -356,21 +305,24 @@ cIm_XifDate::cIm_XifDate(const std::string & aName, cAppli_XifDate & anAppli):
 
 /*******************************************************************/
 /*                                                                 */
-/*                      ::                                         */
+/*                      XifDate2Txt                                */
 /*                                                                 */
 /*******************************************************************/
 
 int XifDate2Txt_main(int argc, char ** argv)
 {
     std::string aFullName,aSysT{"UTC"},aOut{"XifDate.txt"},aCalVOri,aOutCalcV{"CalcV.txt"};
+    bool aHeader(true);
     ElInitArgMain
     (
            argc,argv,
            LArgMain() << EAMC(aFullName,"Full Name", eSAM_IsPatFile),
            LArgMain() << EAM(aOut,"Out",true,"Output file name, Def=XifDate.txt")
-                      << EAM(aCalVOri,"CalVOri",true,"Calculate planitary velocity when an Ori is available")
+                      << EAM(aCalVOri,"CalVOri",true,"Calculate velocity when an Ori is available")
                       << EAM(aOutCalcV,"OutCalcV",true,"Output file name for calculated velocity")
+                      << EAM(aHeader,"Header",true,"Include header file for velocity file, def=true")
     );
+
 
     if(!EAMIsInit(&aCalVOri))
     {
@@ -381,7 +333,7 @@ int XifDate2Txt_main(int argc, char ** argv)
     {
         cAppli_VByDate anAppli(aFullName,aCalVOri);
         anAppli.Export(aOut);
-        anAppli.CalcV(aOutCalcV);
+        anAppli.CalcV(aOutCalcV,aHeader);
     }
     return EXIT_SUCCESS;
 }
